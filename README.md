@@ -1,1 +1,1 @@
-implemented using python3 and pytorch 2.1.2
+implemented using python 3.9 and pytorch 2.1.2
