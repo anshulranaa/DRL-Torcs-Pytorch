@@ -11,6 +11,10 @@ from ActorNetwork import ActorNetwork
 from CriticNetwork import CriticNetwork
 from OU import OU
 
+
+
+
+
 state_size = 29
 action_size = 3
 LRA = 0.0001
@@ -30,10 +34,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 OU = OU()
 
+# def init_weights(m):
+#     if type(m) == torch.nn.Linear:
+#         torch.nn.init.normal_(m.weight, 0, 1e-4)
+#         m.bias.data.fill_(0.0)
+
+import torch
+
 def init_weights(m):
-    if type(m) == torch.nn.Linear:
-        torch.nn.init.normal_(m.weight, 0, 1e-4)
-        m.bias.data.fill_(0.0)
+    if isinstance(m, torch.nn.Linear):
+        torch.nn.init.xavier_uniform_(m.weight)
+        if m.bias is not None:
+            m.bias.data.fill_(0.0)
+
 
 actor = ActorNetwork(state_size).to(device)
 actor.apply(init_weights)
@@ -67,16 +80,23 @@ optimizer_critic = torch.optim.Adam(critic.parameters(), lr=LRC)
 # Environment
 env = TorcsEnv(vision=VISION, throttle=True, gear_change=False)
 
+file_distances = open("distances.txt","w") 
+file_reward = open("rewards.txt","w") 
+
+file_distances.close()
+file_reward.close()
+
+
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 else:
     torch.set_default_tensor_type('torch.FloatTensor')
 
-for i in range(2000):
+for i in range(1000):
     if np.mod(i, 3) == 0:
-        ob = env.reset(relaunch=True)
+        ob,distFromStart = env.reset(relaunch = True)
     else:
-        ob = env.reset()
+        ob,distFromStart = env.reset()
 
     s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
 
@@ -106,7 +126,7 @@ for i in range(2000):
         a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
         a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
-        ob, r_t, done, info = env.step(a_t[0])
+        ob,distFromStart, r_t, done, info = env.step(a_t[0])
 
         s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
 
@@ -174,10 +194,15 @@ for i in range(2000):
 
         s_t = s_t1
         print("---Episode ", i, "  Action:", a_t, "  Reward:", r_t, "  Loss:", loss)
+        with open("rewards.txt","a") as f:
+            # file_reward.write(str(i) + " "+ str(r_t) + "\n") 
+            f.write(str(i) + " "+ str(r_t) + "\n")
 
         if done:
             break
-
+    with open("distances.txt","a") as f:
+        # file_distances.write(str(i) + " "+ str(distFromStart) +"\n")
+        f.write(str(i) + " "+ str(distFromStart) +"\n")
     if np.mod(i, 3) == 0:
         if train_indicator:
             print("Saving model")
