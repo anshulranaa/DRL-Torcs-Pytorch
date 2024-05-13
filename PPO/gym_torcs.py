@@ -8,13 +8,13 @@ import copy
 import collections as col
 import os
 import time
-import sys
 
 
 class TorcsEnv:
-    terminal_judge_start = 50 #1000  # If after 100 timestep still no progress, terminated
+    terminal_judge_start = 50  # If after 100 timestep still no progress, terminated
     termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
-    default_speed = 50 
+    default_speed = 60
+
     initial_reset = True
 
     def __init__(self, vision=False, throttle=False, gear_change=False):
@@ -60,7 +60,10 @@ class TorcsEnv:
             self.observation_space = spaces.Box(low=low, high=high)
 
     def step(self, u):
+       #print("Step")
+        # convert thisAction to the actual torcs actionstr
         client = self.client
+
         this_action = self.agent_to_torcs(u)
 
         # Apply Action
@@ -71,8 +74,6 @@ class TorcsEnv:
 
         #  Simple Autnmatic Throttle Control by Snakeoil
         if self.throttle is False:
-            sys.exit()
-
             target_speed = self.default_speed
             if client.S.d['speedX'] < target_speed - (client.R.d['steer']*50):
                 client.R.d['accel'] += .01
@@ -133,30 +134,27 @@ class TorcsEnv:
         damage = np.array(obs['damage'])
         rpm = np.array(obs['rpm'])
 
+
+
         progress = sp*np.cos(obs['angle']) - np.abs(sp*np.sin(obs['angle'])) - sp * np.abs(obs['trackPos'])
         reward = progress
 
         # collision detection
         if obs['damage'] - obs_pre['damage'] > 0:
             reward = -1
+
         # Termination judgement #########################
         episode_terminate = False
-
-#---------------------------------------------------
         if (abs(track.any()) > 1 or abs(trackPos) > 1):  # Episode is terminated if the car is out of track
-            print("Out of track ")
-            reward = -100 #-200
+            reward = -200
             episode_terminate = True
             client.R.d['meta'] = True
 
         if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
             if progress < self.termination_limit_progress:
-                print("No progress", progress)
-                reward = -100 
+                print("No progress")
                 episode_terminate = True
                 client.R.d['meta'] = True
-#---------------------------------------------------
-
 
         if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
             episode_terminate = True
@@ -168,10 +166,12 @@ class TorcsEnv:
             client.respond_to_server()
 
         self.time_step += 1
-
-        return self.get_obs(), reward, client.R.d['meta'], {}
+        ob, distFromStart = self.get_obs()
+        return ob, distFromStart, reward, client.R.d['meta'], {}
 
     def reset(self, relaunch=False):
+        #print("Reset")
+
         self.time_step = 0
 
         if self.initial_reset is not True:
@@ -230,7 +230,7 @@ class TorcsEnv:
 
 
     def obs_vision_to_image_rgb(self, obs_image_vec):
-        image_vec =  obs_image_vec  
+        image_vec =  obs_image_vec
         r = image_vec[0:len(image_vec):3]
         g = image_vec[1:len(image_vec):3]
         b = image_vec[2:len(image_vec):3]
@@ -249,8 +249,7 @@ class TorcsEnv:
                      'rpm',
                      'track', 
                      'trackPos',
-                     'wheelSpinVel',
-                     'distRaced']
+                     'wheelSpinVel']
             Observation = col.namedtuple('Observaion', names)
             return Observation(focus=np.array(raw_obs['focus'], dtype=np.float32)/200.,
                                speedX=np.array(raw_obs['speedX'], dtype=np.float32)/300.0,
@@ -262,8 +261,7 @@ class TorcsEnv:
                                rpm=np.array(raw_obs['rpm'], dtype=np.float32)/10000,
                                track=np.array(raw_obs['track'], dtype=np.float32)/200.,
                                trackPos=np.array(raw_obs['trackPos'], dtype=np.float32)/1.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32),
-                               distRaced=np.array(raw_obs['distRaced'], dtype=np.float32))
+                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32)), raw_obs['distRaced']
         else:
             names = ['focus',
                      'speedX', 'speedY', 'speedZ', 'angle',
@@ -272,12 +270,11 @@ class TorcsEnv:
                      'track',
                      'trackPos',
                      'wheelSpinVel',
-                     'distRaced',
                      'img']
             Observation = col.namedtuple('Observaion', names)
 
             # Get RGB from observation
-            image_rgb = self.obs_vision_to_image_rgb(raw_obs[names[8]]) 
+            image_rgb = self.obs_vision_to_image_rgb(raw_obs[names[8]])
 
             return Observation(focus=np.array(raw_obs['focus'], dtype=np.float32)/200.,
                                speedX=np.array(raw_obs['speedX'], dtype=np.float32)/self.default_speed,
@@ -288,5 +285,4 @@ class TorcsEnv:
                                track=np.array(raw_obs['track'], dtype=np.float32)/200.,
                                trackPos=np.array(raw_obs['trackPos'], dtype=np.float32)/1.,
                                wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32),
-                               img=image_rgb,
-                               distRaced=np.array(raw_obs['distRaced'], dtype=np.float32))
+                               img=image_rgb), raw_obs['distRaced']

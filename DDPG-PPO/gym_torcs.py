@@ -13,7 +13,7 @@ import time
 class TorcsEnv:
     terminal_judge_start = 50  # If after 100 timestep still no progress, terminated
     termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
-    default_speed = 60
+    default_speed = 100
 
     initial_reset = True
 
@@ -141,12 +141,12 @@ class TorcsEnv:
 
         # collision detection
         if obs['damage'] - obs_pre['damage'] > 0:
-            reward = -1
+            reward = -1000
 
         # Termination judgement #########################
         episode_terminate = False
         if (abs(track.any()) > 1 or abs(trackPos) > 1):  # Episode is terminated if the car is out of track
-            reward = -200
+            reward = -1000
             episode_terminate = True
             client.R.d['meta'] = True
 

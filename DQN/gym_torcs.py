@@ -6,18 +6,14 @@ import snakeoil3_gym as snakeoil3
 import numpy as np
 import copy
 import collections as col
-
-
 import os
-
-
 import time
 
 
 class TorcsEnv:
-    terminal_judge_start = 100  # If after 100 timestep still no progress, terminated
+    terminal_judge_start = 50  # If after 100 timestep still no progress, terminated
     termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
-    default_speed = 70
+    default_speed = 60
 
     initial_reset = True
 
@@ -170,8 +166,8 @@ class TorcsEnv:
             client.respond_to_server()
 
         self.time_step += 1
-
-        return self.get_obs(), reward, client.R.d['meta'], {}
+        ob, distFromStart = self.get_obs()
+        return ob, distFromStart, reward, client.R.d['meta'], {}
 
     def reset(self, relaunch=False):
         #print("Reset")
@@ -265,7 +261,7 @@ class TorcsEnv:
                                rpm=np.array(raw_obs['rpm'], dtype=np.float32)/10000,
                                track=np.array(raw_obs['track'], dtype=np.float32)/200.,
                                trackPos=np.array(raw_obs['trackPos'], dtype=np.float32)/1.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32))
+                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32)), raw_obs['distRaced']
         else:
             names = ['focus',
                      'speedX', 'speedY', 'speedZ', 'angle',
@@ -289,4 +285,4 @@ class TorcsEnv:
                                track=np.array(raw_obs['track'], dtype=np.float32)/200.,
                                trackPos=np.array(raw_obs['trackPos'], dtype=np.float32)/1.,
                                wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32),
-                               img=image_rgb)
+                               img=image_rgb), raw_obs['distRaced']

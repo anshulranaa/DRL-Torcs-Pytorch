@@ -28,13 +28,13 @@ def init_weights(m):
 
 def map_action(action_index):
     steer_map = {
-        0: -0.1,  # Steer left
+        0: 0.4,  # Steer left
         1: 0.0,   # No steering
-        2: 0.1    # Steer right
+        2: 0.4    # Steer right
     }
     steer = steer_map.get(action_index, 0.0)
-    throttle = 0.7  
-    brake = 0.0     
+    throttle = 0.6  
+    brake = 0.0   
     return np.array([steer, throttle, brake])
 
 
@@ -52,8 +52,16 @@ criterion = torch.nn.MSELoss()
 buff = ReplayBuffer(BUFFER_SIZE)
 env = TorcsEnv(vision=False, throttle=True, gear_change=False)
 
-for episode in range(2000):
-    ob = env.reset(relaunch=(np.mod(episode, 3) == 0))
+file_distances = open("distances.txt","w") 
+file_reward = open("rewards.txt","w") 
+file_distances.close()
+file_reward.close()
+
+for episode in range(1000):
+    if np.mod(episode, 3) == 0:
+        ob,distFromStart = env.reset(relaunch = True)
+    else:
+        ob,distFromStart = env.reset()
     s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
     loss = 0
     for t in range(100000):
@@ -66,7 +74,7 @@ for episode in range(2000):
                 action_index = q_network(state).argmax().item()
 
         continuous_action = map_action(action_index)
-        ob, reward, done, _ = env.step(continuous_action)
+        ob, distFromStart, reward, done, _ = env.step(continuous_action)
         s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
 
         buff.add(s_t, continuous_action, reward, s_t1, done)
@@ -90,8 +98,13 @@ for episode in range(2000):
             optimizer.step()
 
         print("---Episode ", episode, "  Action:", continuous_action, "  Reward:", reward)
+        with open("rewards.txt","a") as f:
+            f.write(str(episode) + " "+ str(reward) + "\n")
+
         if done:
             break
+    with open("distances.txt","a") as f:
+        f.write(str(episode) + " "+ str(distFromStart) +"\n")
 
     # Update target network
     if episode % 10 == 0:

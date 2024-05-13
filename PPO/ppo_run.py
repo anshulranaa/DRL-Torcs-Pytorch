@@ -5,7 +5,7 @@ from ppo import PPO
 from gym_torcs import TorcsEnv
 
 # Configuration Constants
-EP_MAX = 2000
+EP_MAX = 1000
 EP_LEN = 1000
 GAMMA = 0.95
 A_LR = 1e-4
@@ -20,6 +20,10 @@ irestart = 1
 
 # Initialize the environment
 env = TorcsEnv(vision=False, throttle=True, gear_change=False)
+
+file_distances = open("distances.txt","w") 
+file_reward = open("rewards.txt","w") 
+
 ppo = PPO(S_DIM, A_DIM, A_LR, C_LR, A_UPDATE_STEPS, C_UPDATE_STEPS, METHOD)
 
 if irestart == 1:
@@ -36,10 +40,10 @@ for ep in range(iter_num, EP_MAX):
     print(f"Episode: {ep}")
 
     if np.mod(ep, 100) == 0:
-        ob = env.reset(relaunch=True)  # Relaunch TORCS every 100 episode due to memory leak error
+        ob,distFromStart = env.reset(relaunch = True)
         print("Relaunching TORCS environment.")
     else:
-        ob = env.reset()
+        ob,distFromStart = env.reset()
 
     s = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel / 100.0, ob.rpm))
     buffer_s, buffer_a, buffer_r = [], [], []
@@ -47,7 +51,7 @@ for ep in range(iter_num, EP_MAX):
     for t in range(EP_LEN):
         a = ppo.choose_action(s)
         a = np.clip(a, [-1.0, 0.0, 0.0], [1.0, 1.0, 1.0])
-        ob, r, done, _ = env.step(a)
+        ob,distFromStart, r, done, _ = env.step(a)
         s_ = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel / 100.0, ob.rpm))
 
         if train_test == 0:
@@ -74,10 +78,11 @@ for ep in range(iter_num, EP_MAX):
                 buffer_s, buffer_a, buffer_r = [], [], []
 
         print("---Episode ", ep , "  Action:", a, "  Reward:", r,)  # Added the print statement as per your request.
+        file_reward.write(str(ep) + " "+ str(r) + "\n") 
 
         if done:
             break
-
+    file_distances.write(str(ep) + " "+ str(distFromStart) +"\n")
     print(f'Episode: {ep} | Episode Reward: {ep_r:.4f}', end='')
     if METHOD['name'] == 'clip':
         print(f' | Lambda: {METHOD["epsilon"]:.4f}')

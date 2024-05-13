@@ -21,6 +21,10 @@ class ActorNetwork(nn.Module):
         nn.init.normal_(self.brake.weight, 0, 1e-4)
         self.log_std = nn.Parameter(t.zeros(3))  # Action size is 3
 
+        nn.init.xavier_uniform_(self.steering.weight)
+        nn.init.xavier_uniform_(self.acceleration.weight)
+        nn.init.xavier_uniform_(self.brake.weight)
+
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))

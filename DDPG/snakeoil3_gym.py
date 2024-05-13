@@ -343,22 +343,22 @@ class ServerState():
         'angle',
         ]
 
-        for k in sorted(self.d): # Use this to get all sensors.
-        #for k in sensors:
+        #for k in sorted(self.d): # Use this to get all sensors.
+        for k in sensors:
             if type(self.d.get(k)) is list: # Handle list type data.
                 if k == 'track': # Nice display for track sensors.
                     strout= str()
-                    for tsensor in self.d['track']:
-                        if   tsensor >180: oc= '|'
-                        elif tsensor > 80: oc= ';'
-                        elif tsensor > 60: oc= ','
-                        elif tsensor > 39: oc= '.'
-                        #elif tsensor > 13: oc= chr(int(tsensor)+65-13)
-                        elif tsensor > 13: oc= chr(int(tsensor)+97-13)
-                        elif tsensor >  3: oc= chr(int(tsensor)+48-3)
-                        else: oc= '_'
-                        strout+= oc
-                    strout= ' -> '+strout[:9] +' ' + strout[9] + ' ' + strout[10:]+' <-'
+                 #  for tsensor in self.d['track']:
+                 #      if   tsensor >180: oc= '|'
+                 #      elif tsensor > 80: oc= ';'
+                 #      elif tsensor > 60: oc= ','
+                 #      elif tsensor > 39: oc= '.'
+                 #      #elif tsensor > 13: oc= chr(int(tsensor)+65-13)
+                 #      elif tsensor > 13: oc= chr(int(tsensor)+97-13)
+                 #      elif tsensor >  3: oc= chr(int(tsensor)+48-3)
+                 #      else: oc= '_'
+                 #      strout+= oc
+                 #  strout= ' -> '+strout[:9] +' ' + strout[9] + ' ' + strout[10:]+' <-'
                     raw_tsens= ['%.1f'%x for x in self.d['track']]
                     strout+= ' '.join(raw_tsens[:9])+'_'+raw_tsens[9]+'_'+' '.join(raw_tsens[10:])
                 elif k == 'opponents': # Nice display for opponent sensors.
@@ -449,7 +449,7 @@ class DriverAction():
     def __init__(self):
        self.actionstr= str()
        # "d" is for data dictionary.
-       self.d= { 'accel':0.5,
+       self.d= { 'accel':0.2,
                    'brake':0,
                   'clutch':0,
                     'gear':1,

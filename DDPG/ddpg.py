@@ -5,8 +5,6 @@ import random
 from gym_torcs import TorcsEnv
 import argparse
 import collections
-#import ipdb
-
 from ReplayBuffer import ReplayBuffer
 from ActorNetwork import ActorNetwork
 from CriticNetwork import CriticNetwork
@@ -21,7 +19,7 @@ BATCH_SIZE = 32
 GAMMA = 0.95
 EXPLORE = 100000.
 epsilon = 1
-train_indicator = 1    # train or not
+train_indicator = 1    
 TAU = 0.001
 
 VISION = False
@@ -67,20 +65,23 @@ criterion_critic = torch.nn.MSELoss(reduction='sum')
 optimizer_actor = torch.optim.Adam(actor.parameters(), lr=LRA)
 optimizer_critic = torch.optim.Adam(critic.parameters(), lr=LRC)
 
-#env environment
 env = TorcsEnv(vision=VISION, throttle=True, gear_change=False)
+file_distances = open("distances.txt","w") 
+file_reward = open("rewards.txt","w") 
+file_distances.close()
+file_reward.close()
 
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 else:
     torch.set_default_tensor_type('torch.FloatTensor') 
 
-for i in range(2000):
+for i in range(300):
 
     if np.mod(i, 3) == 0:
-        ob = env.reset(relaunch = True)
+        ob,distFromStart = env.reset(relaunch = True)
     else:
-        ob = env.reset()
+        ob,distFromStart = env.reset()
 
     s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
     
@@ -113,7 +114,7 @@ for i in range(2000):
         a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
         a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
-        ob, r_t, done, info = env.step(a_t[0])
+        ob,distFromStart, r_t, done, info = env.step(a_t[0])
 
         s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
 
@@ -181,10 +182,13 @@ for i in range(2000):
         
         s_t = s_t1
         print("---Episode ", i , "  Action:", a_t, "  Reward:", r_t, "  Loss:", loss)
-
+        with open ("rewards.txt","a") as f:
+            f.write(str(i) + " "+ str(r_t) + "\n") 
         if done:
             break
-
+    with open ("distances.txt","a") as f:
+        f.write(str(i) + " "+ str(distFromStart) +"\n")
+        
     if np.mod(i, 3) == 0:
         if (train_indicator):
             print("saving model")
@@ -194,6 +198,8 @@ for i in range(2000):
     
 env.end()
 print("Finish.")
+file_distances.close()
+file_reward.close()
 
-#for param in critic.parameters(): param.grad.data.clamp(-1, 1)
+
 

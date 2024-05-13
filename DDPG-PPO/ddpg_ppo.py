@@ -24,7 +24,7 @@ BATCH_SIZE = 32
 GAMMA = 0.95
 EXPLORE = 100000.
 epsilon = 1
-train_indicator = 1  # train or not
+train_indicator = 1  
 TAU = 0.001
 PPO_CLIP_PARAM = 0.2  # Clipping parameter for PPO
 
@@ -74,8 +74,12 @@ target_critic.eval()
 
 criterion_critic = torch.nn.MSELoss(reduction='sum')
 
-optimizer_actor = torch.optim.Adam(actor.parameters(), lr=LRA)
-optimizer_critic = torch.optim.Adam(critic.parameters(), lr=LRC)
+# Define the weight decay parameter
+weight_decay = 0.001  # You can adjust this value as needed
+
+# Create optimizers with weight decay
+optimizer_actor = torch.optim.Adam(actor.parameters(), lr=LRA, weight_decay=weight_decay)
+optimizer_critic = torch.optim.Adam(critic.parameters(), lr=LRC, weight_decay=weight_decay)
 
 # Environment
 env = TorcsEnv(vision=VISION, throttle=True, gear_change=False)
@@ -123,6 +127,8 @@ for i in range(1000):
             noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)[0]
 
         a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
+
+
         a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
         a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
@@ -165,7 +171,7 @@ for i in range(1000):
 
             # Compute gradients for actor from the critic's output
             optimizer_critic.zero_grad()  # Reset the optimizer for the actor update
-            q_values_for_grad.sum().backward(retain_graph=False)  # No need to retain the graph here as we're not performing another backward pass on the actor's graph
+            q_values_for_grad.sum().backward(retain_graph=True)  # No need to retain the graph here as we're not performing another backward pass on the actor's graph
 
             # Compute PPO loss
             ratio = torch.exp(new_log_probs - old_log_probs.detach())  # detach old_log_probs to stop backpropagation to previous steps
@@ -174,9 +180,11 @@ for i in range(1000):
             clipped_surrogate_loss = clipped_ratio * q_values_for_grad.detach()  # again, detach to ensure no gradient flows back to q_values_for_grad
             ppo_loss = -torch.min(surrogate_loss, clipped_surrogate_loss).mean()
 
+
             # Backpropagation for actor
             optimizer_actor.zero_grad()
             ppo_loss.backward()  # No need to retain graph here
+            torch.nn.utils.clip_grad_norm_(actor.parameters(), max_norm=1.0)  # Clip gradients to a maximum norm of 1.0
             optimizer_actor.step()
 
 
