@@ -28,12 +28,12 @@ def init_weights(m):
 
 def map_action(action_index):
     steer_map = {
-        0: 0.4,  # Steer left
+        0: 0.2,  # Steer left
         1: 0.0,   # No steering
-        2: 0.4    # Steer right
+        2: 0.2    # Steer right
     }
     steer = steer_map.get(action_index, 0.0)
-    throttle = 0.6  
+    throttle = 0.5  
     brake = 0.0   
     return np.array([steer, throttle, brake])
 

@@ -11,15 +11,11 @@ from ActorNetwork import ActorNetwork
 from CriticNetwork import CriticNetwork
 from OU import OU
 
-
-
-
-
 state_size = 29
 action_size = 3
-LRA = 0.0001
-LRC = 0.001
-BUFFER_SIZE = 100000  # to change
+LRA = 0.001
+LRC = 0.01
+BUFFER_SIZE = 700000  # to change
 BATCH_SIZE = 32
 GAMMA = 0.95
 EXPLORE = 100000.
@@ -30,16 +26,10 @@ PPO_CLIP_PARAM = 0.2  # Clipping parameter for PPO
 
 VISION = False
 
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 OU = OU()
-
-# def init_weights(m):
-#     if type(m) == torch.nn.Linear:
-#         torch.nn.init.normal_(m.weight, 0, 1e-4)
-#         m.bias.data.fill_(0.0)
-
-import torch
 
 def init_weights(m):
     if isinstance(m, torch.nn.Linear):
@@ -74,8 +64,8 @@ target_critic.eval()
 
 criterion_critic = torch.nn.MSELoss(reduction='sum')
 
-# Define the weight decay parameter
-weight_decay = 0.001  # You can adjust this value as needed
+
+weight_decay = 0.01
 
 # Create optimizers with weight decay
 optimizer_actor = torch.optim.Adam(actor.parameters(), lr=LRA, weight_decay=weight_decay)
@@ -119,18 +109,20 @@ for i in range(1000):
 
         noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0.0, 0.60, 0.30)[0]
         noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1], 0.5, 1.00, 0.10)[0]
-        noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1, 1.00, 0.05)[0]
+        #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1, 1.00, 0.05)[0]
 
         # Stochastic brake
-        if random.random() <= 0.1:
-            print("Apply the brake")
-            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)[0]
+        # if random.random() <= 0.1:
+        #     print("Apply the brake")
+        #     noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)[0]
 
         a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
 
 
         a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
-        a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+        #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+
+
 
         ob,distFromStart, r_t, done, info = env.step(a_t[0])
 
@@ -149,7 +141,9 @@ for i in range(1000):
         y_t = torch.tensor(np.asarray([e[1] for e in batch]), device=device).float()
 
         # Use target network to calculate target_q_value
-        target_q_values = target_critic(new_states, target_actor(new_states))
+        #target_q_values = target_critic(new_states, target_actor(new_states))
+        target_q_values = target_critic(new_states, target_actor(new_states)[0])
+
 
         for k in range(len(batch)):
             if dones[k]:
@@ -183,7 +177,7 @@ for i in range(1000):
 
             # Backpropagation for actor
             optimizer_actor.zero_grad()
-            ppo_loss.backward()  # No need to retain graph here
+            ppo_loss.backward(retain_graph =True)  # No need to retain graph here
             torch.nn.utils.clip_grad_norm_(actor.parameters(), max_norm=1.0)  # Clip gradients to a maximum norm of 1.0
             optimizer_actor.step()
 

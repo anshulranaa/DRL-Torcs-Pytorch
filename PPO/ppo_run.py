@@ -34,7 +34,7 @@ if irestart == 1:
         iter_num = 0
         print("No valid model found, starting training from scratch.")
 
-# Start Training
+
 for ep in range(iter_num, EP_MAX):
     print("\n" + "-" * 50)
     print(f"Episode: {ep}")

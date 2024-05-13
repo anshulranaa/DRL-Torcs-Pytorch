@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-HIDDEN1_UNITS = 300
-HIDDEN2_UNITS = 600
+HIDDEN1_UNITS = 256
+HIDDEN2_UNITS = 512
 
 class CriticNetwork(nn.Module):
     def __init__(self, state_size, action_size):
@@ -17,13 +17,10 @@ class CriticNetwork(nn.Module):
         self.V = nn.Linear(HIDDEN2_UNITS, action_size)
 
     def forward(self, s, a):
-        if isinstance(a, tuple):
-            a = a[0]  # Extract the actions from the tuple
         w1 = F.relu(self.w1(s))
         a1 = self.a1(a)
         h1 = self.h1(w1)
         h2 = h1 + a1
         h3 = F.relu(self.h3(h2))
         out = self.V(h3)
-
         return out

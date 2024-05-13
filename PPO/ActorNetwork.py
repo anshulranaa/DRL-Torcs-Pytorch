@@ -47,8 +47,8 @@ class Actor(nn.Module):
         mu_acc = self.sigmoid(self.mu_acc(l3))
         mu_br = self.sigmoid(self.mu_br(l3)) * 0.1  # scalar multiplication
 
-        sigma_st = self.sigmoid(self.sigma_st(l3)) * 0.2  # scalar multiplication
-        sigma_acc = self.sigmoid(self.sigma_acc(l3)) * 0.2  # scalar multiplication
+        sigma_st = self.sigmoid(self.sigma_st(l3)) * 0.3  # scalar multiplication
+        sigma_acc = self.sigmoid(self.sigma_acc(l3)) * 0.5  # scalar multiplication
         sigma_br = self.sigmoid(self.sigma_br(l3)) * 0.05  # scalar multiplication
 
         mu = torch.cat([mu_st, mu_acc, mu_br], dim=1)

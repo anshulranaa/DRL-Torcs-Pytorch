@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable as V
 
-HIDDEN1_UNITS = 300
-HIDDEN2_UNITS = 600
+HIDDEN1_UNITS = 256
+HIDDEN2_UNITS = 512
 
 class ActorNetwork(nn.Module):
     def __init__(self, state_size):

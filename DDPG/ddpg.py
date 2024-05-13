@@ -101,18 +101,18 @@ for i in range(300):
 
         noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0.0, 0.60, 0.30)[0]
         noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1], 0.5, 1.00, 0.10)[0]
-        noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1, 1.00, 0.05)[0]
+        #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1, 1.00, 0.05)[0]
 
         #stochastic brake
-        if random.random() <= 0.1:
-            print("apply the brake")
-            #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)
-            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)[0]
+        # if random.random() <= 0.1:
+        #     print("apply the brake")
+        #     #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)
+        #     noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0.2, 1.00, 0.10)[0]
 
         
         a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
         a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
-        a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+        #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
         ob,distFromStart, r_t, done, info = env.step(a_t[0])
 
